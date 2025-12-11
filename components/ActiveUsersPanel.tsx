@@ -1,10 +1,13 @@
 "use client";
 
 import { useLocationStore } from "@/store/location-store";
+import { LocationUpdateDto } from "@/types/LocationUpdateDto";
 
 export default function ActiveUsersPanel() {
+    const name = useLocationStore((s) => s.name);
   const users = useLocationStore((s) => s.locations);
-  const stopSharing = useLocationStore((s) => s.stopSharing);
+  const sharing = useLocationStore((s) => s.sharing);
+  const setSharing = useLocationStore((s) => s.setSharing);
 
   return (
     <div className="bg-white/70 rounded-xl shadow-xl p-6 backdrop-blur-md">
@@ -19,17 +22,23 @@ export default function ActiveUsersPanel() {
       </div>
 
       <button
-        onClick={stopSharing}
-        className="w-full py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg mb-4"
+        onClick={() => {
+          setSharing(!sharing);
+        }}
+        className={`w-full py-2 text-white rounded-xl mb-4 ${
+          sharing
+            ? "bg-orange-400 hover:bg-orange-500"
+            : "bg-blue-500 hover:bg-blue-600"
+        }`}
       >
-        Stop Sharing
+        {sharing ? "Stop Sharing" : "Start Sharing"}
       </button>
 
       <div className="space-y-3 max-h-[500px] overflow-y-auto">
-        {users.map((u: any) => (
+        {users.map((u: LocationUpdateDto) => (
           <div
             key={u.userId}
-            className="p-3 border rounded-lg bg-white flex items-center gap-3"
+            className="p-3 rounded-xl border border-gray-300 bg-white flex items-center gap-3"
           >
             <div className="h-10 w-10 rounded-full bg-purple-500 text-white flex items-center justify-center">
               {u.userId[0].toUpperCase()}
@@ -37,7 +46,7 @@ export default function ActiveUsersPanel() {
 
             <div>
               <p className="font-medium">
-                {u.userId === "Me" ? "aung thawe (You)" : u.userId}
+                {u.userId === `${name}` ? u.userId + " (you)" : u.userId}
               </p>
               <p className="text-xs text-gray-500">
                 {u.latitude.toFixed(4)}, {u.longitude.toFixed(4)}

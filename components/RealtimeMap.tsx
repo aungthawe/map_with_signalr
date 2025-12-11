@@ -12,21 +12,24 @@ const TileLayer = dynamic(
   { ssr: false }
 );
 
-//import { MapContainer, TileLayer } from "react-leaflet";
 import { useLocationUpdates } from "@/lib/signalr/useLocationUpdates";
 import { UserMarker } from "./UserMarker";
 import { useLocationStore } from "@/store/location-store";
 import { LocationUpdateDto } from "@/types/LocationUpdateDto";
+import { useState } from "react";
 
 export default function RealtimeMap() {
-  useLocationUpdates();
+  const sharing = useLocationStore((s) => s.sharing);
+
+  useLocationUpdates(sharing);
+
   const users: LocationUpdateDto[] = useLocationStore((s) => s.locations);
 
   return (
     <div className="bg-white/70 rounded-xl shadow-xl p-6 backdrop-blur-lg">
       <h2 className="text-xl font-semibold mb-4">Location Map</h2>
 
-      <div className="h-[550px] rounded-xl overflow-hidden border bg-gradient-to-br from-blue-100 to-cyan-100">
+      <div className="h-[550px] rounded-xl overflow-hidden border border-gray-300 bg-gradient-to-br from-blue-100 to-cyan-100">
         <MapContainer
           center={[16.7777, 96.1392]}
           zoom={14}

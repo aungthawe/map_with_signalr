@@ -21,7 +21,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  useLocationUpdates();
+  // useLocationUpdates();
   return (
     <html lang="en">
       <body

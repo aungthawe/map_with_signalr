@@ -1,13 +1,19 @@
 import { create } from "zustand";
 import { LocationUpdateDto } from "@/types/LocationUpdateDto";
 export type LocationStore = {
+  name:string;
+  setName:(name:string)=>void;
   locations: LocationUpdateDto[];
   updateLocations: (dto: LocationUpdateDto) => void;
-  stopSharing: () => void;
+  sharing: boolean;
+  setSharing: (sharing: boolean) => void;
   connected: boolean;
 };
 
 export const useLocationStore = create<LocationStore>((set) => ({
+  name: "",
+  setName: (name: string) => set({ name }),
+  sharing: true,
   locations: [],
   connected: true,
   updateLocations: (dto: LocationUpdateDto) =>
@@ -26,9 +32,5 @@ export const useLocationStore = create<LocationStore>((set) => ({
 
       return { locations: [...state.locations, dto] };
     }),
-
-  stopSharing: () =>
-    set({
-      locations: [],
-    }),
+  setSharing: (sharing: boolean) => set({ sharing }),
 }));

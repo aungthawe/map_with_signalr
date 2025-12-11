@@ -1,58 +1,64 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { getSignalRConnection } from "./connection";
 import { useLocationStore } from "@/store/location-store";
 import { LocationUpdateDto } from "@/types/LocationUpdateDto";
 
-export function useLocationUpdates() {
+export function useLocationUpdates(sharing: boolean) {
   const updateLocation = useLocationStore((s) => s.updateLocations);
+  const name = useLocationStore((s) => s.name);
+  const watchIdRef = useRef<number | null>(null);
 
   useEffect(() => {
+    // 1. DO NOT CONNECT until name is set
+    if (!name) return;
+
     const connection = getSignalRConnection();
 
-    //connection.start().catch((err) => console.error("Connection error:", err));
-    connection.on("ReceiveLocation", (data: LocationUpdateDto) => {
-      updateLocation(data);
-    });
+    connection.on("ReceiveLocation", (data: LocationUpdateDto) =>
+      updateLocation(data)
+    );
 
-    // Start connection (only once)
-    if (connection.state === "Disconnected") {
-      connection
-        .start()
-        .then(() => {
-          console.log("SignalR connected");
+    // Start only when we have name
+    const start = async () => {
+      if (connection.state === "Disconnected") {
+        await connection.start();
+      }
 
-          navigator.geolocation.watchPosition(
-            (pos) => {
-              const lat = pos.coords.latitude;
-              const lng = pos.coords.longitude;
+      // 2. DO NOT WATCH GEOLOCATION unless sharing = true
+      if (!sharing) return;
 
-              if (connection.state === "Connected") {
-                connection
-                  .invoke("SendLocation", {
-                    userId: "Aung Thawe",
-                    latitude: lat,
-                    longitude: lng,
-                    timestamp: Date.now(),
-                  })
-                  .catch((err) => console.error("Invoke error:", err));
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
 
-                console.log("sendLocation completed!", lat, lng, Date.now());
-              }
-            },
-            (err) => console.error("Geolocation error:", err.message),
-            { enableHighAccuracy: true }
-          );
-        })
-        .catch((err) => console.error("Connection error:", err));
-    }
+          if (connection.state === "Connected") {
+            connection.invoke("SendLocation", {
+              userId: `${name}`,
+              latitude: lat,
+              longitude: lng,
+              timestamp: Date.now(),
+            });
+          }
+        },
+        (err) => console.error("Geolocation error:", err.message),
+        { enableHighAccuracy: true }
+      );
+    };
+
+    start();
 
     return () => {
       connection.off("ReceiveLocation");
-      connection.stop().then(() => {
-        console.log("SignalR disconnected");
-      });
+
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+
+      connection.stop();
     };
-  }, []);
+  }, [sharing, name]);
 }
