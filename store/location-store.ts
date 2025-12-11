@@ -1,24 +1,34 @@
 import { create } from "zustand";
+import { LocationUpdateDto } from "@/types/LocationUpdateDto";
+export type LocationStore = {
+  locations: LocationUpdateDto[];
+  updateLocations: (dto: LocationUpdateDto) => void;
+  stopSharing: () => void;
+  connected: boolean;
+};
 
-export interface LocationUpdate {
-  userId: string;
-  latitude: number;
-  longitude: number;
-  timestamp: number;
-}
+export const useLocationStore = create<LocationStore>((set) => ({
+  locations: [],
+  connected: true,
+  updateLocations: (dto: LocationUpdateDto) =>
+    set((state: any) => {
+      const existing = state.locations.find(
+        (x: any) => x.userId === dto.userId
+      );
 
-interface LocationState {
-  locations: Record<string, LocationUpdate>;
-  updateLocations: (data: LocationUpdate) => void;
-}
+      if (existing) {
+        return {
+          locations: state.locations.map((u: any) =>
+            u.userId === dto.userId ? dto : u
+          ),
+        };
+      }
 
-export const useLocationStore = create<LocationState>((set) => ({
-  locations: {},
-  updateLocations: (data) =>
-    set((state) => ({
-      locations: {
-        ...state.locations,
-        [data.userId]: data,
-      },
-    })),
+      return { locations: [...state.locations, dto] };
+    }),
+
+  stopSharing: () =>
+    set({
+      locations: [],
+    }),
 }));

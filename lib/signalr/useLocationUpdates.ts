@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { getSignalRConnection } from "./connection";
 import { useLocationStore } from "@/store/location-store";
+import { LocationUpdateDto } from "@/types/LocationUpdateDto";
 
 export function useLocationUpdates() {
   const updateLocation = useLocationStore((s) => s.updateLocations);
@@ -10,7 +11,8 @@ export function useLocationUpdates() {
   useEffect(() => {
     const connection = getSignalRConnection();
 
-    connection.on("ReceiveLocation", (data) => {
+    //connection.start().catch((err) => console.error("Connection error:", err));
+    connection.on("ReceiveLocation", (data: LocationUpdateDto) => {
       updateLocation(data);
     });
 
@@ -29,7 +31,7 @@ export function useLocationUpdates() {
               if (connection.state === "Connected") {
                 connection
                   .invoke("SendLocation", {
-                    userId: "Me",
+                    userId: "Aung Thawe",
                     latitude: lat,
                     longitude: lng,
                     timestamp: Date.now(),
@@ -48,6 +50,9 @@ export function useLocationUpdates() {
 
     return () => {
       connection.off("ReceiveLocation");
+      connection.stop().then(() => {
+        console.log("SignalR disconnected");
+      });
     };
   }, []);
 }
