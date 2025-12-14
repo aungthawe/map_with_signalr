@@ -16,18 +16,23 @@ export function useLocationUpdates(sharing: boolean) {
 
     const connection = getSignalRConnection();
 
+    connection.on("ReceiveInitialLocations", (list: LocationUpdateDto[]) => {
+      list.forEach(updateLocation);
+    });
+
     connection.on("ReceiveLocation", (data: LocationUpdateDto) =>
       updateLocation(data)
     );
 
-    // Start only when we have name
     const start = async () => {
       if (connection.state === "Disconnected") {
         await connection.start();
       }
 
-      // 2. DO NOT WATCH GEOLOCATION unless sharing = true
-      if (!sharing) return;
+      if (!sharing) {
+        console.log("Not sharing location, skipping watch");
+        return;
+      }
 
       watchIdRef.current = navigator.geolocation.watchPosition(
         (pos) => {
@@ -44,7 +49,7 @@ export function useLocationUpdates(sharing: boolean) {
           }
         },
         (err) => console.error("Geolocation error:", err.message),
-        { enableHighAccuracy: true }
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
       );
     };
 
@@ -57,6 +62,7 @@ export function useLocationUpdates(sharing: boolean) {
         navigator.geolocation.clearWatch(watchIdRef.current);
         watchIdRef.current = null;
       }
+      useLocationStore.getState().clearLocations();
 
       connection.stop();
     };
